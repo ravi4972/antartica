@@ -17,7 +17,7 @@ env.config();
 const pool = new Pool({
   user: process.env.dbUsername,
   host: process.env.dbHost,
-  database: 'postgres',
+  database: process.env.dbDatabase,
   password: process.env.dbPassword,
   port: process.env.dbPort
 });
