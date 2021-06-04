@@ -1,5 +1,5 @@
 //const mySql = require('mysql2');
-const Pool = require('pg').Pool
+const Pool = require('pg').Pool;
 const env= require('dotenv');
 env.config();
 
@@ -28,7 +28,7 @@ const pool = new Pool({
     database: 'dbjuru4artr58i',
     password: 'eba5f9e3e5031bc397862b505fbeaf283bdde3dddace64cce3ca66b79c115e65',
     port: '5432',
-    SSL:true
+    ssl: { rejectUnauthorized: false }
   });
 
 module.exports = pool;
