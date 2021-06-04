@@ -138,7 +138,7 @@ function createJWT(tokenPayload,jwtExpirySeconds) {
     return new Promise((resolve, reject) => {
         try {
             let JWTBody = JSON.parse(JSON.stringify(tokenPayload));
-            resolve(jwt.sign({ JWTBody }, process.env.TOKEN_SECRET, {
+            resolve(jwt.sign({ JWTBody }, 'dRgUkXp2s5v8y/B?E(H+KbPeShVmYq3t', {
                 algorithm: "HS256",
                 expiresIn: jwtExpirySeconds
             }));
