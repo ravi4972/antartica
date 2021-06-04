@@ -20,6 +20,7 @@ const pool = new Pool({
   database: 'postgres',
   password: process.env.dbPassword,
   port: process.env.dbPort,
+  ssl:true
 });
 
 module.exports = pool;
