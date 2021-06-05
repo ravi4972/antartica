@@ -125,7 +125,7 @@ module.exports.findUser = async function (req, res, next) {
         }
     }
     catch (err) {
-        next(createCustomError("Error on server side " + err.message,500));
+        next(createCustomError("Error on server side " + err.message, 500));
     }
 
 }
@@ -159,14 +159,38 @@ module.exports.sortedList = async function (req, res, next) {
             }
         }
         else {
-            next(createCustomError("Order by Column is not defined in Database",406));
+            next(createCustomError("Order by Column is not defined in Database", 406));
         }
 
     }
     catch (err) {
-        next(createCustomError("Error on server side " + err.message,500));
+        next(createCustomError("Error on server side " + err.message, 500));
     }
 }
+
+module.exports.pageList = async function (req, res, next) {
+    try {
+        let limit = req.query.limit || 0;
+        let skip = req.query.skip || 0;
+
+        let query = `SELECT * FROM EMPLOYEES limit ${limit} OFFSET ${skip}`;
+
+        let result = await executeQuery(query);
+        if (result.rows) {
+            res.status(200).send(result.rows);
+        }
+        else {
+            let err = new Error("No Record found");
+            err.errorCode = "404";
+            next(err);
+        }
+    }
+    catch (err) {
+        next(createCustomError("Error on server side " + err.message, 500));
+    }
+
+}
+
 
 function executeQuery(sql, parameter) {
     return new Promise((resolve, reject) => {
@@ -215,7 +239,7 @@ function createJWT(tokenPayload, jwtExpirySeconds) {
     })
 }
 
-function createCustomError(message,code){
+function createCustomError(message, code) {
     let customErr = new Error(message);
     customErr.errorCode = code;
     return customErr;
