@@ -56,12 +56,12 @@ module.exports.login = async function (req, res, next) {
         let query = "SELECT u.email,u.password,e.employeeid FROM users u join employees e on u.email=e.email and u.email=$1";
         let input = [email];
         let result = await executeQuery(query, input);
-        
+
 
         if (result.rows[0]) {
             let parsedResult = result.rows[0];
             let response = await bcrypt.compare(password, parsedResult.password);
-            
+
             if (response && parsedResult.employeeid) {
                 res.locals.employeeid = parsedResult.employeeid;
                 res.locals.email = parsedResult.email;
@@ -71,7 +71,7 @@ module.exports.login = async function (req, res, next) {
                 res.status("401").send("Invalid Username/Password");
             }
         }
-        else{
+        else {
             res.status("401").send("Invalid Username/Password");
         }
     } catch (err) {
@@ -82,14 +82,14 @@ module.exports.login = async function (req, res, next) {
 module.exports.JWT = async function (req, res, next) {
     try {
         let jwtExpirySeconds = 300;
-        let token = await createJWT(res.locals,jwtExpirySeconds);
+        let token = await createJWT(res.locals, jwtExpirySeconds);
         res.cookie("AntarticaToken", token, { maxAge: jwtExpirySeconds * 1000 })
         res.status(200).send("JWT token created");
     }
-    catch(err){
+    catch (err) {
         res.status(500).send(err.message);
     }
-    
+
 }
 
 module.exports.validateReq = (req, res, next) => {
@@ -99,6 +99,72 @@ module.exports.validateReq = (req, res, next) => {
     }
     else {
         next();
+    }
+}
+
+module.exports.findUser = async function (req, res, next) {
+    try {
+        let fname = req.query.firstname;
+        let lname = req.query.lastname;
+        let empid = req.query.employeeid;
+        if (fname && lname && empid) {
+            let query = "SELECT * FROM EMPLOYEES WHERE firstName=$1 AND lastName=$2 AND employeeID=$3";
+            let input = [fname, lname, empid];
+            let result = await executeQuery(query, input);
+            if (result.rows[0]) {
+                res.status(200).send(result.rows[0]);
+            }
+            else {
+                let err = new Error("No Record found");
+                err.errorCode = "404";
+                next(err);
+            }
+        }
+        else {
+            res.status(406).send("Invalid Query");
+        }
+    }
+    catch (err) {
+        next(createCustomError("Error on server side " + err.message,500));
+    }
+
+}
+
+module.exports.sortedList = async function (req, res, next) {
+    try {
+        let orderBy = req.query.orderby && (req.query.orderby).toLowerCase();
+        let getColumnList = "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = 'employees'";
+        let columnList = await executeQuery(getColumnList);
+        let columnListArr = columnList.rows;
+        let flag = false;
+
+        for (let pointer of columnListArr) {
+            if (orderBy === (pointer.column_name).toLowerCase()) {
+                flag = true;
+                break;
+            }
+        }
+        if (flag === true) {
+            let query = `SELECT * FROM EMPLOYEES ORDER BY ${orderBy}`;
+
+            let result = await executeQuery(query);
+            console.log(result.rows);
+            if (result.rows) {
+                res.status(200).send(result.rows);
+            }
+            else {
+                let err = new Error("No Record found");
+                err.errorCode = "404";
+                next(err);
+            }
+        }
+        else {
+            next(createCustomError("Order by Column is not defined in Database",406));
+        }
+
+    }
+    catch (err) {
+        next(createCustomError("Error on server side " + err.message,500));
     }
 }
 
@@ -134,7 +200,7 @@ function createHash(data) {
     })
 }
 
-function createJWT(tokenPayload,jwtExpirySeconds) {
+function createJWT(tokenPayload, jwtExpirySeconds) {
     return new Promise((resolve, reject) => {
         try {
             let JWTBody = JSON.parse(JSON.stringify(tokenPayload));
@@ -149,3 +215,8 @@ function createJWT(tokenPayload,jwtExpirySeconds) {
     })
 }
 
+function createCustomError(message,code){
+    let customErr = new Error(message);
+    customErr.errorCode = code;
+    return customErr;
+}
